@@ -1,7 +1,7 @@
 # Usar PHP 8.2 con Apache
 FROM php:8.2-apache
 
-# Instalar dependencias necesarias y extensiones PHP para Laravel
+# Instalar dependencias necesarias del sistema y extensiones de PHP
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -19,17 +19,24 @@ RUN a2enmod rewrite
 # Copiar configuración personalizada de Apache para Laravel
 COPY laravel.conf /etc/apache2/sites-available/000-default.conf
 
-# Copiar proyecto al contenedor
+# Establecer el directorio de trabajo
+WORKDIR /var/www/html
+
+# Copiar Composer desde la imagen oficial
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Copiar solo los archivos necesarios para instalar dependencias primero
+COPY composer.json composer.lock /var/www/html/
+
+# Instalar dependencias de PHP (Laravel)
+RUN composer install --no-interaction --optimize-autoloader --no-dev
+
+# Ahora copiar todo el código del proyecto
 COPY . /var/www/html
 
-# Cambiar permisos para que Apache pueda leer y escribir donde se necesite
+# Cambiar permisos para Laravel
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
 
-WORKDIR /var/www/html
-
-# Copiar Composer desde la imagen oficial de composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Exponer puerto 80 (Apache)
+# Exponer puerto 80
 EXPOSE 80
