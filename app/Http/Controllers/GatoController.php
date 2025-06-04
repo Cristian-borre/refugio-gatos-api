@@ -14,10 +14,16 @@ class GatoController extends Controller
      */
     public function index(Request $request)
     {
-        $perPage = $request->get('per_page', 10);
-        $gatos = Gato::paginate($perPage);
+        $query = Gato::query();
 
-        return response()->json($gatos, 200);
+        if ($request->has('busqueda') && $request->busqueda != '') {
+            $busqueda = $request->busqueda;
+            $query->where('nombre', 'like', "%{$busqueda}%");
+        }
+
+        $gatos = $query->paginate($request->input('limit', 10));
+
+        return response()->json($gatos);
     }
 
     /**
