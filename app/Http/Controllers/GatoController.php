@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Gato;
 use Illuminate\Http\Request;
 
 class GatoController extends Controller
@@ -11,9 +12,12 @@ class GatoController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $perPage = $request->get('per_page', 10);
+        $gatos = Gato::paginate($perPage);
+
+        return response()->json($gatos, 200);
     }
 
     /**
@@ -24,7 +28,17 @@ class GatoController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:255',
+            'edad' => 'required|integer|min:0',
+            'raza' => 'nullable|string|max:255',
+            'collar' => 'required|integer|unique:gatos,collar',
+            'estado' => 'in:disponible,adoptado',
+        ]);
+
+        $gato = Gato::create($validated);
+
+        return response()->json($gato, 201);
     }
 
     /**
@@ -35,7 +49,13 @@ class GatoController extends Controller
      */
     public function show($id)
     {
-        //
+        $gato = Gato::find($id);
+
+        if (!$gato) {
+            return response()->json(['error' => 'Gato no encontrado'], 404);
+        }
+
+        return response()->json($gato, 200);
     }
 
     /**
@@ -47,7 +67,23 @@ class GatoController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $gato = Gato::find($id);
+
+        if (!$gato) {
+            return response()->json(['error' => 'Gato no encontrado'], 404);
+        }
+
+        $validated = $request->validate([
+            'nombre' => 'sometimes|required|string|max:255',
+            'edad' => 'sometimes|required|integer|min:0',
+            'raza' => 'nullable|string|max:255',
+            'collar' => 'sometimes|required|integer|unique:gatos,collar,' . $gato->id,
+            'estado' => 'in:disponible,adoptado',
+        ]);
+
+        $gato->update($validated);
+
+        return response()->json($gato, 200);
     }
 
     /**
@@ -58,6 +94,14 @@ class GatoController extends Controller
      */
     public function destroy($id)
     {
-        //
+        $gato = Gato::find($id);
+
+        if (!$gato) {
+            return response()->json(['error' => 'Gato no encontrado'], 404);
+        }
+
+        $gato->delete();
+
+        return response()->json(['message' => 'Gato eliminado correctamente'], 200);
     }
 }
