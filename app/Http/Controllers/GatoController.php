@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreGatoRequest;
+use App\Http\Requests\UpdateGatoRequest;
+use App\Http\Resources\GatoResource;
 use App\Models\Gato;
 use Illuminate\Http\Request;
 
@@ -16,14 +19,13 @@ class GatoController extends Controller
     {
         $query = Gato::query();
 
-        if ($request->has('busqueda') && $request->busqueda != '') {
-            $busqueda = $request->busqueda;
-            $query->where('nombre', 'like', "%{$busqueda}%");
+        if ($request->filled('busqueda')) {
+            $query->where('nombre', 'like', "%{$request->busqueda}%");
         }
 
         $gatos = $query->paginate($request->input('limit', 10));
 
-        return response()->json($gatos);
+        return GatoResource::collection($gatos);
     }
 
     /**
@@ -32,19 +34,17 @@ class GatoController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreGatoRequest $request)
     {
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:255',
-            'edad' => 'required|integer|min:0',
-            'raza' => 'nullable|string|max:255',
-            'collar' => 'required|integer|unique:gatos,collar',
-            'estado' => 'in:disponible,adoptado',
-        ]);
-
-        $gato = Gato::create($validated);
-
-        return response()->json($gato, 201);
+        try {
+            $gato = Gato::create($request->validate());
+            return (new GatoResource($gato))->response()->setStatusCode(201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Ocurrió un error al guardar el gato.',
+                'detalle' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -53,15 +53,9 @@ class GatoController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Gato $gato)
     {
-        $gato = Gato::find($id);
-
-        if (!$gato) {
-            return response()->json(['error' => 'Gato no encontrado'], 404);
-        }
-
-        return response()->json($gato, 200);
+        return new GatoResource($gato);
     }
 
     /**
@@ -71,25 +65,17 @@ class GatoController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateGatoRequest $request, Gato $gato)
     {
-        $gato = Gato::find($id);
-
-        if (!$gato) {
-            return response()->json(['error' => 'Gato no encontrado'], 404);
+        try {
+            $gato->update($request->validate());
+            return new GatoResource($gato);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Ocurrió un error al actualizar el gato.',
+                'detalle' => $e->getMessage(),
+            ], 500);
         }
-
-        $validated = $request->validate([
-            'nombre' => 'sometimes|required|string|max:255',
-            'edad' => 'sometimes|required|integer|min:0',
-            'raza' => 'nullable|string|max:255',
-            'collar' => 'sometimes|required|integer|unique:gatos,collar,' . $gato->id,
-            'estado' => 'in:disponible,adoptado',
-        ]);
-
-        $gato->update($validated);
-
-        return response()->json($gato, 200);
     }
 
     /**
@@ -106,8 +92,14 @@ class GatoController extends Controller
             return response()->json(['error' => 'Gato no encontrado'], 404);
         }
 
-        $gato->delete();
-
-        return response()->json(['message' => 'Gato eliminado correctamente'], 200);
+        try {
+            $gato->delete();
+            return response()->json(['message' => 'Gato eliminado correctamente'], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al eliminar el gato.',
+                'detalle' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
