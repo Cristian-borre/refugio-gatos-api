@@ -53,8 +53,14 @@ class GatoController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show(Gato $gato)
+    public function show($id)
     {
+        $gato = Gato::find($id);
+
+        if (!$gato) {
+            return response()->json(['error' => 'Gato no encontrado'], 404);
+        }
+
         return new GatoResource($gato);
     }
 
