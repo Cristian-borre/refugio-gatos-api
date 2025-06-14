@@ -22,8 +22,8 @@ class RolMiddleware
             return response()->json(['error' => 'No autenticado'], 401);
         }
 
-        $allowedRoles = explode(',', $roles);
-
+        $allowedRoles = explode('-', $roles);
+        
         if (!in_array($user->rol, $allowedRoles) ) {
             return response()->json(['error' => 'No autorizado'], 403);
         }

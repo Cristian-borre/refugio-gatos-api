@@ -12,6 +12,13 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    /**
+     * Register a new user and return a token.
+     *
+     * @param  \App\Http\Requests\RegisterRequest  $request
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function register(RegisterRequest $request)
     {
         $validated = $request->validated();
@@ -34,6 +41,13 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Login the user and return a token.
+     *
+     * @param  \App\Http\Requests\LoginRequest  $request
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function login(LoginRequest $request)
     {
         $validated = $request->validated();
@@ -54,6 +68,12 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Logout the user (revoke the token).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();

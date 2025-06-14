@@ -20,7 +20,7 @@ class GatoController extends Controller
         $query = Gato::query();
 
         if ($request->filled('busqueda')) {
-            $query->where('nombre', 'like', "%{$request->busqueda}%");
+            $query->where('nombre', 'like', '%' . $request->busqueda . '%');
         }
 
         $gatos = $query->paginate($request->input('limit', 10));
@@ -37,13 +37,14 @@ class GatoController extends Controller
     public function store(StoreGatoRequest $request)
     {
         try {
-            $gato = Gato::create($request->validate());
+            $data = $request->validated();
+            $gato = Gato::create($data);
             return (new GatoResource($gato))->response()->setStatusCode(201);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Ocurrió un error al guardar el gato.',
                 'detalle' => $e->getMessage(),
-            ], 500);
+            ])->setStatusCode(500);
         }
     }
 
@@ -74,7 +75,8 @@ class GatoController extends Controller
     public function update(UpdateGatoRequest $request, Gato $gato)
     {
         try {
-            $gato->update($request->validate());
+            $data = $request->validated();
+            $gato->update($data);
             return new GatoResource($gato);
         } catch (\Exception $e) {
             return response()->json([
